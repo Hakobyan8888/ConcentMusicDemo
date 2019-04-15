@@ -11,18 +11,18 @@ using System.Net;
 
 namespace ConcentMusic
 {
-    class TelegramBot
+    public class TelegramBot
     {
-        private TelegramBotClient telegramBotClient;
-        private MusicDownloader musicDownloader;
-        private MusicPlayer musicPlayer;
-        private Dictionary<string, bool> allowedUsers = new Dictionary<string, bool>();
-        public static Dictionary<string, bool> AlterVote = new Dictionary<string, bool>();
-        public static Dictionary<string, bool> ClearListVote = new Dictionary<string, bool>();
-        public static int? ClearListVotersCount;
-        public static int? AlterVotersCount;
-        public static List<TrackInfo> TracksList;
-        public static int trackId;
+        private TelegramBotClient _telegramBotClient;
+        private MusicDownloader _musicDownloader;
+        private MusicPlayer _musicPlayer;
+        private Dictionary<string, bool> _allowedUsers = new Dictionary<string, bool>();
+        public static Dictionary<string, bool> _alterVote = new Dictionary<string, bool>();
+        public static Dictionary<string, bool> _clearListVote = new Dictionary<string, bool>();
+        public static int? _clearListVotersCount;
+        public static int? _alterVotersCount;
+        public static List<TrackInfo> t_racksList;
+        public static int _trackId;
 
 
         public TelegramBot()
@@ -30,23 +30,23 @@ namespace ConcentMusic
             Logger.Init();
             Logger.Info("Starting server");
 
-            allowedUsers.Add(AppSettings.DefaultUser.ToLower(), true);
-            restoreUsers();
-            trackId = 0;
-            TracksList = new List<TrackInfo>();
-            musicPlayer = new MusicPlayer();
-            musicPlayer.StartPlaying();
-            musicDownloader = new MusicDownloader();
-            telegramBotClient = new TelegramBotClient(AppSettings.TelegramApiKey);
+            _allowedUsers.Add(AppSettings.DefaultUser.ToLower(), true);
+            RestoreUsers();
+            _trackId = 0;
+            t_racksList = new List<TrackInfo>();
+            _musicPlayer = new MusicPlayer();
+            _musicPlayer.StartPlayingVlc();
+            _musicDownloader = new MusicDownloader();
+            _telegramBotClient = new TelegramBotClient(AppSettings.TelegramApiKey);
 
-            telegramBotClient.OnMessage += messageHandler;
-            telegramBotClient.OnMessage += addToQueue;
+            _telegramBotClient.OnMessage += MessageHandler;
+            _telegramBotClient.OnMessage += AddToQueue;
 
             Logger.Info("Start receiving");
 
-            telegramBotClient.StartReceiving();
+            _telegramBotClient.StartReceiving();
             while (Console.ReadKey().KeyChar != 'q') { }
-            telegramBotClient.StopReceiving();
+            _telegramBotClient.StopReceiving();
             Environment.Exit(0);
         }
 
@@ -62,7 +62,7 @@ namespace ConcentMusic
             }
         }
 
-        private void restoreUsers()
+        private void RestoreUsers()
         {
             if (!Directory.Exists(AppSettings.AllowedUsersDirectory))
                 Directory.CreateDirectory(AppSettings.AllowedUsersDirectory);
@@ -75,7 +75,7 @@ namespace ConcentMusic
                     while ((line = sr.ReadLine()) != null)
                     {
                         if (line != AppSettings.DefaultUser.ToLower())
-                            allowedUsers.Add(line, true);
+                            _allowedUsers.Add(line, true);
                     }
                 }
             }
@@ -85,12 +85,12 @@ namespace ConcentMusic
             }
         }
 
-        private void writeUsersToFile()
+        private void WriteUsersToFile()
         {
             StringBuilder usersList = new StringBuilder();
             using (StreamWriter sr = new StreamWriter(AppSettings.AllowedUsersDirectory + "users.txt"))
             {
-                foreach (string user in allowedUsers.Keys)
+                foreach (string user in _allowedUsers.Keys)
                 {
                     usersList.AppendLine(user);
                 }
@@ -98,173 +98,184 @@ namespace ConcentMusic
             }
         }
 
-        private void messageHandler(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void MessageHandler(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
             Logger.Info($"Got message \"{ev.Message.Text}\"");
 
-            if (!allowedUsers.ContainsKey(ev.Message.Chat.Username.ToLower()))
+            if (string.IsNullOrEmpty(ev.Message.Chat.Username))
             {
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.NoPermission);
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.SpecifyUsername).Wait();
+                return;
+            }
+
+            if (!_allowedUsers.ContainsKey(ev.Message.Chat.Username.ToLower()))
+            {
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.NoPermission);
                 return;
             }
 
             switch (ev.Message.Text)
             {
                 case "/start":
-                    telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.Start);
+                    _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.Start);
                     break;
                 case "/skip":
-                    alter(sender, ev);
+                    Alter(sender, ev);
                     break;
                 case "/volumeup":
-                    volumeUp(sender, ev);
+                    VolumeUp(sender, ev);
                     break;
                 case "/volumedown":
-                    volumeDown(sender, ev);
+                    VolumeDown(sender, ev);
                     break;
                 case "/pause":
-                    pauseTrack(sender, ev);
+                    PauseTrack(sender, ev);
                     break;
                 case "/play":
-                    resumeTrack(sender, ev);
+                    ResumeTrack(sender, ev);
                     break;
                 case "/getlist":
-                    getTitles(sender, ev);
+                    GetTitles(sender, ev);
                     break;
                 case "/getusers":
-                    getUsers(sender, ev);
+                    GetUsers(sender, ev);
                     break;
                 case "/clearlist":
-                    clearList(sender, ev);
+                    ClearList(sender, ev);
                     break;
             }
 
             if (ev.Message.Text.StartsWith("/adduser"))
             {
-                addUser(sender, ev);
+                AddUser(sender, ev);
             }
 
             if (ev.Message.Text.StartsWith("/removeuser"))
             {
-                removeUser(sender, ev);
+                RemoveUser(sender, ev);
             }
         }
 
-        private void addToQueue(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void AddToQueue(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
-            long chatId = ev.Message.Chat.Id;
+            long _chatId = ev.Message.Chat.Id;
 
-            if (!allowedUsers.ContainsKey(ev.Message.Chat.Username.ToLower()))
+            if (string.IsNullOrEmpty(ev.Message.Chat.Username))
+                return;
+
+            if (!_allowedUsers.ContainsKey(ev.Message.Chat.Username.ToLower()))
                 return;
 
             if (ev.Message.Text.StartsWith("/") || ev.Message.Text.StartsWith("@"))
                 return;
 
-            if (!checkLink(ev.Message.Text) || ev.Message.Text == null || ev.Message.Text.Contains('\n') == true)
+            if (!CheckLink(ev.Message.Text) || ev.Message.Text == null || ev.Message.Text.Contains('\n') == true)
             {
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.InvalidLink);
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.InvalidLink);
                 return;
             }
 
             Logger.Info("Valid youtube link detected.");
-            telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.QueuedSuccessful);
-            TracksList.Add(new TrackInfo(ev.Message.Text, ev.Message.Chat.Username));
-            if (TracksList.Count != 0)
+            _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.QueuedSuccessful);
+            t_racksList.Add(new TrackInfo(ev.Message.Text, ev.Message.Chat.Username));
+            if (t_racksList.Count != 0)
             {
-                musicDownloader.DownloadAudio();
+                _musicDownloader.DownloadAudio();
             }
         }
 
-        private bool checkLink(string link)
+        private bool CheckLink(string link)
         {
             Regex YoutubeVideoRegex = new Regex(@"^(http(s)?:\/\/)?((w){3}.)?youtu(be|.be)?(\.com)?\/.+", RegexOptions.IgnoreCase);
             return YoutubeVideoRegex.Match(link).Success;
         }
 
-        private void addUser(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void AddUser(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
-            long chatId = ev.Message.Chat.Id;
+            var _chatId = ev.Message.Chat.Id;
+            var user = ev.Message.Text.Split(' ').ElementAtOrDefault(1);
 
-            if (ev.Message.Text == "/adduser")
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.AddUserExample);
-
-            string user = ev.Message.Text.Split(' ')[1];
-
-            if (user.StartsWith("@") && !allowedUsers.ContainsKey(user.Substring(1).ToLower()))
+            if (string.IsNullOrEmpty(user))
             {
-                allowedUsers.Add(user.Substring(1).ToLower(), true);
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.UserAddedSuccessful);
-                writeUsersToFile();
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.AddUserExample).Wait();
+                return;
             }
-            else if (allowedUsers.ContainsKey(user.Substring(1).ToLower()))
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.UserAlreadyExists);
+
+            if (user.StartsWith("@") && !_allowedUsers.ContainsKey(user.Substring(1).ToLower()))
+            {
+                _allowedUsers.Add(user.Substring(1).ToLower(), true);
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.UserAddedSuccessful);
+                WriteUsersToFile();
+            }
+            else if (_allowedUsers.ContainsKey(user.Substring(1).ToLower()))
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.UserAlreadyExists);
             else
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.AddUserExample);
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.AddUserExample);
         }
 
-        private void removeUser(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void RemoveUser(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
-            long chatId = ev.Message.Chat.Id;
-            string user = ev.Message.Text.Split(' ')[1];
+            long _chatId = ev.Message.Chat.Id;
+            string _user = ev.Message.Text.Split(' ')[1];
 
-            if (!allowedUsers.ContainsKey(user.Substring(1).ToLower()))
+            if (!_allowedUsers.ContainsKey(_user.Substring(1).ToLower()))
             {
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.UserNotExists);
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.UserNotExists);
                 return;
             }
 
-            if (ev.Message.Chat.Username.ToLower() == user.Substring(1).ToLower())
+            if (ev.Message.Chat.Username.ToLower() == _user.Substring(1).ToLower())
             {
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.CannotRemoveYourself);
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.CannotRemoveYourself);
                 return;
             }
 
-            if (user.StartsWith("@"))
+            if (_user.StartsWith("@"))
             {
-                allowedUsers.Remove(user.Substring(1).ToLower());
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.UserRemovedSuccessful);
-                writeUsersToFile();
-            }
-            else
-            {
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.InvalidUsername);
-            }
-        }
-
-        private void alter(object sender, Telegram.Bot.Args.MessageEventArgs ev)
-        {
-            long chatId = ev.Message.Chat.Id;
-
-            if (AlterVotersCount == null)
-            {
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.TrackNotStarted);
-                return;
-            }
-
-            if (AlterVote.ContainsKey(ev.Message.Chat.Username.ToLower()))
-            {
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.AlreadyVoted);
-                return;
-            }
-
-            int members = allowedUsers.Count;
-            int halfMembers = members / 2;
-
-            AlterVotersCount++;
-            AlterVote.Add(ev.Message.Chat.Username.ToLower(), true);
-
-            if (AlterVotersCount > halfMembers)
-            {
-                musicPlayer.Skip();
-                telegramBotClient.SendTextMessageAsync(chatId, ResponseMessages.TrackSkiped);
+                _allowedUsers.Remove(_user.Substring(1).ToLower());
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.UserRemovedSuccessful);
+                WriteUsersToFile();
             }
             else
             {
-                telegramBotClient.SendTextMessageAsync(chatId, $"{halfMembers + 1 - AlterVotersCount} {ResponseMessages.VotesNotEnough}");
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.InvalidUsername);
             }
         }
 
-        private void volumeUp(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void Alter(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        {
+            long _chatId = ev.Message.Chat.Id;
+
+            if (_alterVotersCount == null)
+            {
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.TrackNotStarted);
+                return;
+            }
+
+            if (_alterVote.ContainsKey(ev.Message.Chat.Username.ToLower()))
+            {
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.AlreadyVoted);
+                return;
+            }
+
+            int _members = _allowedUsers.Count;
+            int _halfMembers = _members / 2;
+
+            _alterVotersCount++;
+            _alterVote.Add(ev.Message.Chat.Username.ToLower(), true);
+
+            if (_alterVotersCount > _halfMembers)
+            {
+                _musicPlayer.Skip();
+                _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.TrackSkiped);
+            }
+            else
+            {
+                _telegramBotClient.SendTextMessageAsync(_chatId, $"{_halfMembers + 1 - _alterVotersCount} {ResponseMessages.VotesNotEnough}");
+            }
+        }
+
+        public void VolumeUp(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
             ProcessStartInfo psi = new ProcessStartInfo();
 
@@ -275,7 +286,7 @@ namespace ConcentMusic
             amixerProcess.Close();
         }
 
-        private void volumeDown(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        public void VolumeDown(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
             ProcessStartInfo psi = new ProcessStartInfo();
 
@@ -286,125 +297,125 @@ namespace ConcentMusic
             amixerProcess.Close();
         }
 
-        private void pauseTrack(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void PauseTrack(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
-            if (musicPlayer.IsPlaying() == null)
+            if (_musicPlayer.IsPlaying() == null)
             {
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackNotStarted);
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackNotStarted);
                 return;
             }
 
-            if (musicPlayer.IsPlaying() == false)
+            if (_musicPlayer.IsPlaying() == false)
             {
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackAlreadyPaused);
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackAlreadyPaused);
                 return;
             }
 
-            musicPlayer.PauseTrack();
-            telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackPaused);
+            _musicPlayer.PauseTrack();
+            _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackPaused);
         }
 
-        private void resumeTrack(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void ResumeTrack(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
-            if (musicPlayer.IsPlaying() == null)
+            if (_musicPlayer.IsPlaying() == null)
             {
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackNotStarted);
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackNotStarted);
                 return;
             }
 
-            if (musicPlayer.IsPlaying() == true)
+            if (_musicPlayer.IsPlaying() == true)
             {
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackAlreadyPlaying);
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackAlreadyPlaying);
                 return;
             }
 
-            musicPlayer.PauseTrack();
-            telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackStarted);
-            musicPlayer.ResumeTrack();
+            _musicPlayer.PauseTrack();
+            _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackStarted);
+            _musicPlayer.ResumeTrack();
         }
 
-        private void getUsers(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void GetUsers(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
             StringBuilder usersBuilder = new StringBuilder();
 
-            foreach (string user in allowedUsers.Keys)
+            foreach (string user in _allowedUsers.Keys)
                 usersBuilder.AppendLine("@" + user);
-            telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, usersBuilder.ToString());
+            _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, usersBuilder.ToString());
         }
 
-        private void clearList(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void ClearList(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
-            if (!TracksList.Any())
+            if (!t_racksList.Any())
             {
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackListIsEmpty);
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackListIsEmpty);
                 return;
             }
 
-            if (ClearListVote.ContainsKey(ev.Message.Chat.Username.ToLower()))
+            if (_clearListVote.ContainsKey(ev.Message.Chat.Username.ToLower()))
             {
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.AlreadyVoted);
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.AlreadyVoted);
                 return;
             }
 
-            int members = allowedUsers.Count;
-            int halfMembers = members / 2;
+            int _members = _allowedUsers.Count;
+            int _halfMembers = _members / 2;
 
-            ClearListVotersCount++;
-            ClearListVote.Add(ev.Message.Chat.Username.ToLower(), true);
+            _clearListVotersCount++;
+            _clearListVote.Add(ev.Message.Chat.Username.ToLower(), true);
 
-            if (ClearListVotersCount > halfMembers)
+            if (_clearListVotersCount > _halfMembers)
             {
                 Directory.Delete(AppSettings.MusicDirectory, true);
-                TracksList.Clear();
-                musicDownloader.createMusicDirectory();
-                ClearListVotersCount = 0;
-                ClearListVote.Clear();
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackListCleared);
+                t_racksList.Clear();
+                _musicDownloader.CreateMusicDirectory();
+                _clearListVotersCount = 0;
+                _clearListVote.Clear();
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackListCleared);
             }
             else
             {
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, $"{halfMembers + 1 - ClearListVotersCount} {ResponseMessages.ClearVotesNotEnough}");
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, $"{_halfMembers + 1 - _clearListVotersCount} {ResponseMessages.ClearVotesNotEnough}");
             }
         }
 
-        private void getTitles(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        public void GetTitles(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
             StringBuilder titlesBuilder = new StringBuilder();
-            int trackNumber = 1;
+            int _trackNumber = 1;
 
-            if (!TracksList.Any() || TracksList.Count() == 0)
+            if (!t_racksList.Any() || t_racksList.Count() == 0)
             {
-                telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackListIsEmpty);
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackListIsEmpty);
                 return;
             }
 
-            foreach (TrackInfo track in TracksList)
+            foreach (TrackInfo track in t_racksList)
             {
-                string title = getTitle(track.url);
+                string _title = GetTitle(track._url);
 
                 if (track.trackState == TrackState.Playing)
                     titlesBuilder.Append("->");
 
-                titlesBuilder.AppendLine(trackNumber++ + ") " + title + $" | User @{track.user}");
+                titlesBuilder.AppendLine(_trackNumber++ + ") " + _title + $" | User @{track._user}");
             }
-            telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, titlesBuilder.ToString());
+            _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, titlesBuilder.ToString());
         }
 
-        private string getTitle(string url)
+        private string GetTitle(string url)
         {
-            string api = $"http://youtube.com/get_video_info?video_id={getArgs(url, "v", '?')}";
-            string title = getArgs(new WebClient().DownloadString(api), "title", '&');
+            string _api = $"http://youtube.com/get_video_info?video_id={GetArgs(url, "v", '?')}";
+            string _title = GetArgs(new WebClient().DownloadString(_api), "title", '&');
 
-            return title;
+            return _title;
         }
 
-        private string getArgs(string args, string key, char query)
+        private string GetArgs(string args, string key, char query)
         {
-            var iqs = args.IndexOf(query);
-            return iqs == -1
+            var _iqs = args.IndexOf(query);
+            return _iqs == -1
                 ? string.Empty
-                : HttpUtility.ParseQueryString(iqs < args.Length - 1
-                    ? args.Substring(iqs + 1) : string.Empty)[key];
+                : HttpUtility.ParseQueryString(_iqs < args.Length - 1
+                    ? args.Substring(_iqs + 1) : string.Empty)[key];
         }
     }
 }

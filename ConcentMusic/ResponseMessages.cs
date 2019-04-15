@@ -25,5 +25,6 @@ namespace ConcentMusic
         public static string TrackStarted = "The track is started.";
         public static string TrackListIsEmpty = "The track list is empty.";
         public static string TrackListCleared = "Track list cleared.";
+        public static string SpecifyUsername = "Please specify your username in Telegram. Only in that case the bot can work.";
     }
 }

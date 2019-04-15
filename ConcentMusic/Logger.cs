@@ -7,45 +7,45 @@ namespace ConcentMusic
     {
         public static void Error(string logMessage)
         {
-            wrileLog("ERR: " + logMessage);
+            WrileLog("ERR: " + logMessage);
         }
 
         public static void Warn(string logMessage)
         {
-            wrileLog("WARN: " + logMessage);
+            WrileLog("WARN: " + logMessage);
         }
 
         public static void Info(string logMessage)
         {
-            wrileLog("INFO: " + logMessage);
+            WrileLog("INFO: " + logMessage);
         }
 
         public static void Debug(string logMessage)
         {
-            wrileLog("DEBUG: " + logMessage);
+            WrileLog("DEBUG: " + logMessage);
         }
 
         public static void Trace(string logMessage)
         {
-            wrileLog("TRACE: " + logMessage);
+            WrileLog("TRACE: " + logMessage);
         }
 
-        private static void wrileLog(string typedLogMessage)
+        private static void WrileLog(string typedLogMessage)
         {
-            string logLine = $"{DateTime.Now.ToLongTimeString()} {DateTime.Now.ToLongDateString()}:\t{typedLogMessage}";
+            string _logLine = $"{DateTime.Now.ToLongTimeString()} {DateTime.Now.ToLongDateString()}:\t{typedLogMessage}";
 
             using (StreamWriter logWriter = File.AppendText(AppSettings.LogsDirectory + "log.txt"))
             {
-                logWriter.WriteLine(logLine);
+                logWriter.WriteLine(_logLine);
             }
         }
 
         public static void Init()
         {
-            createLogDirectory();
+            CreateLogDirectory();
         }
 
-        private static void createLogDirectory()
+        private static void CreateLogDirectory()
         {
             try
             {

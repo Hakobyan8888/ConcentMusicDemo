@@ -6,7 +6,6 @@ namespace ConcentMusic
     {
         static void Main(string[] args)
         {
-            // ///
             TelegramBot telegramBot = new TelegramBot();
         }
     }

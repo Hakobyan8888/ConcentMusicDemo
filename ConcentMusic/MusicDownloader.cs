@@ -9,27 +9,27 @@ namespace ConcentMusic
 {
     class MusicDownloader
     {
-        private Task download;
+        private Task _downloader;
 
         public MusicDownloader()
         {
-            createMusicDirectory();
+            CreateMusicDirectory();
         }
 
         public void DownloadAudio()
         {
-            var notDownloadedTracks = TelegramBot.TracksList.Where(x => x.trackState == TrackState.NotDownloaded);
+            var notDownloadedTracks = TelegramBot.t_racksList.Where(x => x.trackState == TrackState.NotDownloaded);
 
-            download = Task.Factory.StartNew(() =>
+            _downloader = Task.Factory.StartNew(() =>
             {
                 foreach (var track in notDownloadedTracks)
                 {
-                    downloadAudio(track.trackId);
+                    DownloadAudio(track._trackId);
                 }
             });
         }
 
-        public void createMusicDirectory()
+        public void CreateMusicDirectory()
         {
             try
             {
@@ -41,19 +41,19 @@ namespace ConcentMusic
             }
         }
 
-        private void downloadAudio(int trackId)
+        private void DownloadAudio(int trackId)
         {
             Logger.Info("Downloading track");
 
-            string URL = TelegramBot.TracksList.Where(x => x.trackId == trackId).First().url;
+            string _url = TelegramBot.t_racksList.Where(x => x._trackId == trackId).First()._url;
             ProcessStartInfo psi = new ProcessStartInfo();
 
-            TelegramBot.TracksList.Where(x => x.trackId == trackId).First().trackState = TrackState.Downloading;
-            psi.FileName = "youtube-dl";
-            psi.Arguments = "-o " + "\"" + AppSettings.MusicDirectory + trackId + "\"" + " -f 140 " + "\"" + URL + "\"";
+            TelegramBot.t_racksList.Where(x => x._trackId == trackId).First().trackState = TrackState.Downloading;
+            psi.FileName = @"C:\Program Files (x86)\youtube-dl.exe";
+            psi.Arguments = "-o " + "\"" + AppSettings.MusicDirectory + trackId + "\"" + " -f 140 " + "\"" + _url + "\"";
             Process youtubeDlProcess = Process.Start(psi);
             youtubeDlProcess.WaitForExit();
-            TelegramBot.TracksList.Where(x => x.trackId == trackId).First().trackState = TrackState.Downloaded;
+            TelegramBot.t_racksList.Where(x => x._trackId == trackId).First().trackState = TrackState.Downloaded;
             youtubeDlProcess.Close();
             Logger.Info("Track downloaded");
         }

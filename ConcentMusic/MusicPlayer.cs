@@ -8,14 +8,14 @@ namespace ConcentMusic
 {
     class MusicPlayer
     {
-        private Process cvlcProcess;
-        private bool? isPlaying;
+        private Process _cvlcProcess;
+        private bool? _isPlaying;
 
         ~MusicPlayer()
         {
             try
             {
-                cvlcProcess.Kill();
+                _cvlcProcess.Kill();
             }
             catch (Exception ex)
             {
@@ -26,28 +26,28 @@ namespace ConcentMusic
 
         public void PlayMusic(int id)
         {
-            int minTrackId;
+            int _minTrackId;
             ProcessStartInfo psi = new ProcessStartInfo();
 
-            psi.FileName = "cvlc";
+            psi.FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe";
             psi.Arguments = "--play-and-exit " + AppSettings.MusicDirectory + id;
-            minTrackId = TelegramBot.TracksList.Where(x => x.trackState == TrackState.Downloaded).Min(x => x.trackId);
-            TelegramBot.TracksList.Where(x => x.trackId == minTrackId).First().trackState = TrackState.Playing;
-            cvlcProcess = Process.Start(psi);
-            cvlcProcess.WaitForExit();
+            _minTrackId = TelegramBot.t_racksList.Where(x => x.trackState == TrackState.Downloaded).Min(x => x._trackId);
+            TelegramBot.t_racksList.Where(x => x._trackId == _minTrackId).First().trackState = TrackState.Playing;
+            _cvlcProcess = Process.Start(psi);
+            _cvlcProcess.WaitForExit();
 
             try
             {
-                cvlcProcess.Close();
+                _cvlcProcess.Close();
             }
             catch (Exception ex)
             {
                 Logger.Warn($"{ex.Message}: Can't close the process");
             }
-            removeTrack(id);
+            RemoveTrack(id);
         }
 
-        private void removeTrack(int id)
+        private void RemoveTrack(int id)
         {
             try
             {
@@ -59,71 +59,71 @@ namespace ConcentMusic
             }
         }
 
-        public void StartPlaying()
+        public void StartPlayingVlc()
         {
-            Thread cvlc = new Thread(startPlaying);
+            Thread cvlc = new Thread(StartPlaying);
             cvlc.Start();
         }
 
-        private void startPlaying()
+        private void StartPlaying()
         {
-            int minTrackId;
+            int _minTrackId;
             while (true)
             {
-                if (TelegramBot.TracksList.Where(x => x.trackState == TrackState.Downloaded).Count() != 0)
+                if (TelegramBot.t_racksList.Where(x => x.trackState == TrackState.Downloaded).Count() != 0)
                 {
-                    TelegramBot.AlterVotersCount = 0;
-                    TelegramBot.AlterVote.Clear();
-                    isPlaying = true;
-                    minTrackId = TelegramBot.TracksList.Where(x => x.trackState == TrackState.Downloaded).Min(x => x.trackId);
-                    PlayMusic(minTrackId);
-                    TelegramBot.TracksList.RemoveAll(x => x.trackId == minTrackId);
+                    TelegramBot._alterVotersCount = 0;
+                    TelegramBot._alterVote.Clear();
+                    _isPlaying = true;
+                    _minTrackId = TelegramBot.t_racksList.Where(x => x.trackState == TrackState.Downloaded).Min(x => x._trackId);
+                    PlayMusic(_minTrackId);
+                    TelegramBot.t_racksList.RemoveAll(x => x._trackId == _minTrackId);
                 }
                 else
                 {
-                    isPlaying = null;
-                    TelegramBot.AlterVotersCount = null;
-                    Thread.Sleep(1000);
+                    _isPlaying = null;
+                    TelegramBot._alterVotersCount = null;
+                    Thread.Sleep(100);
                 }
             }
         }
 
         public void PauseTrack()
         {
-            Process stopCvlc;
+            Process _stopCvlc;
             ProcessStartInfo psi = new ProcessStartInfo();
 
             psi.FileName = "kill";
-            psi.Arguments = "-STOP " + cvlcProcess.Id;
-            stopCvlc = Process.Start(psi);
-            stopCvlc.WaitForExit();
-            stopCvlc.Close();
-            isPlaying = false;
+            psi.Arguments = "-STOP " + _cvlcProcess.Id;
+            _stopCvlc = Process.Start(psi);
+            _stopCvlc.WaitForExit();
+            _stopCvlc.Close();
+            _isPlaying = false;
         }
 
         public void ResumeTrack()
         {
-            Process resumeCvlc;
+            Process _resumeCvlc;
             ProcessStartInfo psi = new ProcessStartInfo();
 
             psi.FileName = "kill";
-            psi.Arguments = "-CONT " + cvlcProcess.Id;
-            resumeCvlc = Process.Start(psi);
-            resumeCvlc.WaitForExit();
-            resumeCvlc.Close();
-            isPlaying = true;
+            psi.Arguments = "-CONT " + _cvlcProcess.Id;
+            _resumeCvlc = Process.Start(psi);
+            _resumeCvlc.WaitForExit();
+            _resumeCvlc.Close();
+            _isPlaying = true;
         }
 
         public bool? IsPlaying()
         {
-            return isPlaying;
+            return _isPlaying;
         }
 
         public void Skip()
         {
             try
             {
-                cvlcProcess.Kill();
+                _cvlcProcess.Kill();
             }
             catch (Exception ex)
             {
