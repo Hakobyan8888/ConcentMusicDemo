@@ -393,7 +393,7 @@ namespace ConcentMusic
             {
                 string _title = GetTitle(track._url);
 
-                if (track.trackState == TrackState.Playing)
+                if (track._trackState == TrackState.Playing)
                     titlesBuilder.Append("->");
 
                 titlesBuilder.AppendLine(_trackNumber++ + ") " + _title + $" | User @{track._user}");

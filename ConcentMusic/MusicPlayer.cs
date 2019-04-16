@@ -19,7 +19,7 @@ namespace ConcentMusic
             }
             catch (Exception ex)
             {
-                Logger.Error($"{ex.Message}: can't close cvlc process.");
+                Logger.Error($"{ex.Message}: Can't close cvlc process.");
             }
 
         }
@@ -31,8 +31,8 @@ namespace ConcentMusic
 
             psi.FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe";
             psi.Arguments = "--play-and-exit " + AppSettings.MusicDirectory + id;
-            _minTrackId = TelegramBot.t_racksList.Where(x => x.trackState == TrackState.Downloaded).Min(x => x._trackId);
-            TelegramBot.t_racksList.Where(x => x._trackId == _minTrackId).First().trackState = TrackState.Playing;
+            _minTrackId = TelegramBot.t_racksList.Where(x => x._trackState == TrackState.Downloaded).Min(x => x._trackId);
+            TelegramBot.t_racksList.Where(x => x._trackId == _minTrackId).First()._trackState = TrackState.Playing;
             _cvlcProcess = Process.Start(psi);
             _cvlcProcess.WaitForExit();
 
@@ -70,12 +70,12 @@ namespace ConcentMusic
             int _minTrackId;
             while (true)
             {
-                if (TelegramBot.t_racksList.Where(x => x.trackState == TrackState.Downloaded).Count() != 0)
+                if (TelegramBot.t_racksList.Where(x => x._trackState == TrackState.Downloaded).Count() != 0)
                 {
                     TelegramBot._alterVotersCount = 0;
                     TelegramBot._alterVote.Clear();
                     _isPlaying = true;
-                    _minTrackId = TelegramBot.t_racksList.Where(x => x.trackState == TrackState.Downloaded).Min(x => x._trackId);
+                    _minTrackId = TelegramBot.t_racksList.Where(x => x._trackState == TrackState.Downloaded).Min(x => x._trackId);
                     PlayMusic(_minTrackId);
                     TelegramBot.t_racksList.RemoveAll(x => x._trackId == _minTrackId);
                 }

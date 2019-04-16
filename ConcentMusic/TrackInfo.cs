@@ -14,14 +14,14 @@ namespace ConcentMusic
         public readonly string _url;
         public readonly int _trackId;
         public readonly string _user;
-        public TrackState trackState;
+        public TrackState _trackState;
 
         public TrackInfo(string url, string user)
         {
             this._url = url;
             this._user = user;
             _trackId = TelegramBot._trackId;
-            trackState = TrackState.NotDownloaded;
+            _trackState = TrackState.NotDownloaded;
 
             TelegramBot._trackId++;
         }
