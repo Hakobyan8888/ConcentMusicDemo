@@ -21,7 +21,7 @@ namespace ConcentMusic
         public static Dictionary<string, bool> _clearListVote = new Dictionary<string, bool>();
         public static int? _clearListVotersCount;
         public static int? _alterVotersCount;
-        public static List<TrackInfo> t_racksList;
+        public static List<TrackInfo> _tracksList;
         public static int _trackId;
 
 
@@ -33,7 +33,7 @@ namespace ConcentMusic
             _allowedUsers.Add(AppSettings.DefaultUser.ToLower(), true);
             RestoreUsers();
             _trackId = 0;
-            t_racksList = new List<TrackInfo>();
+            _tracksList = new List<TrackInfo>();
             _musicPlayer = new MusicPlayer();
             _musicPlayer.StartPlayingVlc();
             _musicDownloader = new MusicDownloader();
@@ -143,6 +143,9 @@ namespace ConcentMusic
                 case "/clearlist":
                     ClearList(sender, ev);
                     break;
+                case "/stop":
+                    StopTrack(sender, ev);
+                    break;
             }
 
             if (ev.Message.Text.StartsWith("/adduser"))
@@ -177,8 +180,8 @@ namespace ConcentMusic
 
             Logger.Info("Valid youtube link detected.");
             _telegramBotClient.SendTextMessageAsync(_chatId, ResponseMessages.QueuedSuccessful);
-            t_racksList.Add(new TrackInfo(ev.Message.Text, ev.Message.Chat.Username));
-            if (t_racksList.Count != 0)
+            _tracksList.Add(new TrackInfo(ev.Message.Text, ev.Message.Chat.Username));
+            if (_tracksList.Count != 0)
             {
                 _musicDownloader.DownloadAudio();
             }
@@ -279,8 +282,8 @@ namespace ConcentMusic
         {
             ProcessStartInfo psi = new ProcessStartInfo();
 
-            psi.FileName = "amixer";
-            psi.Arguments = "set 'Master' 10%+";
+            psi.FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe";
+            psi.Arguments = "--global - key - vol - up ";
             Process amixerProcess = Process.Start(psi);
             amixerProcess.WaitForExit();
             amixerProcess.Close();
@@ -295,6 +298,24 @@ namespace ConcentMusic
             Process amixerProcess = Process.Start(psi);
             amixerProcess.WaitForExit();
             amixerProcess.Close();
+        }
+
+        private void StopTrack(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        {
+            if (_musicPlayer.IsPlaying() == null)
+            {
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackNotStarted);
+                return;
+            }
+
+            if (_musicPlayer.IsPlaying() == false)
+            {
+                _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackAlreadyPaused);
+                return;
+            }
+
+            _musicPlayer.StopTrack();
+            _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackStoped);
         }
 
         private void PauseTrack(object sender, Telegram.Bot.Args.MessageEventArgs ev)
@@ -345,7 +366,7 @@ namespace ConcentMusic
 
         private void ClearList(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
-            if (!t_racksList.Any())
+            if (!_tracksList.Any())
             {
                 _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackListIsEmpty);
                 return;
@@ -366,7 +387,7 @@ namespace ConcentMusic
             if (_clearListVotersCount > _halfMembers)
             {
                 Directory.Delete(AppSettings.MusicDirectory, true);
-                t_racksList.Clear();
+                _tracksList.Clear();
                 _musicDownloader.CreateMusicDirectory();
                 _clearListVotersCount = 0;
                 _clearListVote.Clear();
@@ -383,13 +404,13 @@ namespace ConcentMusic
             StringBuilder titlesBuilder = new StringBuilder();
             int _trackNumber = 1;
 
-            if (!t_racksList.Any() || t_racksList.Count() == 0)
+            if (!_tracksList.Any() || _tracksList.Count() == 0)
             {
                 _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.TrackListIsEmpty);
                 return;
             }
 
-            foreach (TrackInfo track in t_racksList)
+            foreach (TrackInfo track in _tracksList)
             {
                 string _title = GetTitle(track._url);
 

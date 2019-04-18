@@ -8,14 +8,14 @@ namespace ConcentMusic
 {
     class MusicPlayer
     {
-        private Process _cvlcProcess;
+        private Process _vlcProcess;
         private bool? _isPlaying;
 
         ~MusicPlayer()
         {
             try
             {
-                _cvlcProcess.Kill();
+                _vlcProcess.Kill();
             }
             catch (Exception ex)
             {
@@ -31,14 +31,14 @@ namespace ConcentMusic
 
             psi.FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe";
             psi.Arguments = "--play-and-exit " + AppSettings.MusicDirectory + id;
-            _minTrackId = TelegramBot.t_racksList.Where(x => x._trackState == TrackState.Downloaded).Min(x => x._trackId);
-            TelegramBot.t_racksList.Where(x => x._trackId == _minTrackId).First()._trackState = TrackState.Playing;
-            _cvlcProcess = Process.Start(psi);
-            _cvlcProcess.WaitForExit();
+            _minTrackId = TelegramBot._tracksList.Where(x => x._trackState == TrackState.Downloaded).Min(x => x._trackId);
+            TelegramBot._tracksList.Where(x => x._trackId == _minTrackId).First()._trackState = TrackState.Playing;
+            _vlcProcess = Process.Start(psi);
+            _vlcProcess.WaitForExit();
 
             try
             {
-                _cvlcProcess.Close();
+                _vlcProcess.Close();
             }
             catch (Exception ex)
             {
@@ -70,14 +70,14 @@ namespace ConcentMusic
             int _minTrackId;
             while (true)
             {
-                if (TelegramBot.t_racksList.Where(x => x._trackState == TrackState.Downloaded).Count() != 0)
+                if (TelegramBot._tracksList.Where(x => x._trackState == TrackState.Downloaded).Count() != 0)
                 {
                     TelegramBot._alterVotersCount = 0;
                     TelegramBot._alterVote.Clear();
                     _isPlaying = true;
-                    _minTrackId = TelegramBot.t_racksList.Where(x => x._trackState == TrackState.Downloaded).Min(x => x._trackId);
+                    _minTrackId = TelegramBot._tracksList.Where(x => x._trackState == TrackState.Downloaded).Min(x => x._trackId);
                     PlayMusic(_minTrackId);
-                    TelegramBot.t_racksList.RemoveAll(x => x._trackId == _minTrackId);
+                    TelegramBot._tracksList.RemoveAll(x => x._trackId == _minTrackId);
                 }
                 else
                 {
@@ -88,16 +88,29 @@ namespace ConcentMusic
             }
         }
 
-        public void PauseTrack()
+        public void StopTrack()
         {
-            Process _stopCvlc;
+            Process _stopvlc;
             ProcessStartInfo psi = new ProcessStartInfo();
 
-            psi.FileName = "kill";
-            psi.Arguments = "-STOP " + _cvlcProcess.Id;
-            _stopCvlc = Process.Start(psi);
-            _stopCvlc.WaitForExit();
-            _stopCvlc.Close();
+            psi.FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe";
+            psi.Arguments = "--global-key-stop " + _vlcProcess.Id;
+            _stopvlc = Process.Start(psi);
+            _stopvlc.WaitForExit();
+            _stopvlc.Close();
+            _isPlaying = false;
+        }
+
+        public void PauseTrack()
+        {
+            Process _pausevlc;
+            ProcessStartInfo psi = new ProcessStartInfo();
+
+            psi.FileName = @"C:\Users\Arthur\Downloads\PSTools\pssuspend.exe";
+            psi.Arguments = _vlcProcess.Id.ToString();
+            _pausevlc = Process.Start(psi);
+            _pausevlc.WaitForExit();
+            _pausevlc.Close();
             _isPlaying = false;
         }
 
@@ -106,8 +119,8 @@ namespace ConcentMusic
             Process _resumeCvlc;
             ProcessStartInfo psi = new ProcessStartInfo();
 
-            psi.FileName = "kill";
-            psi.Arguments = "-CONT " + _cvlcProcess.Id;
+            psi.FileName = @"C:\Users\Arthur\Downloads\PSTools\pssuspend.exe";
+            psi.Arguments = "-r " + _vlcProcess.Id;
             _resumeCvlc = Process.Start(psi);
             _resumeCvlc.WaitForExit();
             _resumeCvlc.Close();
@@ -123,11 +136,11 @@ namespace ConcentMusic
         {
             try
             {
-                _cvlcProcess.Kill();
+                _vlcProcess.Kill();
             }
             catch (Exception ex)
             {
-                Logger.Warn($"{ex.Message}: Can't kill cvlc process.");
+                Logger.Warn($"{ex.Message}: Can't kill vlc process.");
             }
         }
     }
