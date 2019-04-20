@@ -1,12 +1,12 @@
 ﻿using System;
 
-namespace ConcentMusic
+namespace MusicDemo
 {
     class Program
     {
         static void Main(string[] args)
         {
-            TelegramBot telegramBot = new TelegramBot();
+            BotSettings botSettings = new BotSettings();
         }
     }
 }

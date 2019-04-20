@@ -1,7 +1,10 @@
-﻿
-namespace ConcentMusic
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace MusicDemo
 {
-    public static class ResponseMessages
+    internal class ResponseMessages
     {
         public static string Start = "Hi! Paste the youtube song link you want me to play.";
         public static string NoPermission = "No permission use this action.";
@@ -17,8 +20,8 @@ namespace ConcentMusic
         public static string TrackNotStarted = "The track not started yet, wait please or paste a link.";
         public static string AlreadyVoted = "You can't vote again, wait till the next track.";
         public static string TrackSkiped = "The track skiped, wait for another one.";
-        public static string VotesNotEnough = "votes needed to change the track.";
-        public static string ClearVotesNotEnough = "votes needed to clear list.";
+        public static string VotesNotEnough = "Votes needed to change the track.";
+        public static string ClearVotesNotEnough = "Votes needed to clear list.";
         public static string TrackAlreadyPaused = "The track is already paused.";
         public static string TrackPaused = "The track is paused.";
         public static string TrackAlreadyPlaying = "The track is already playing.";
@@ -26,6 +29,5 @@ namespace ConcentMusic
         public static string TrackListIsEmpty = "The track list is empty.";
         public static string TrackListCleared = "Track list cleared.";
         public static string SpecifyUsername = "Please specify your username in Telegram. Only in that case the bot can work.";
-        public static string TrackStoped = "The track is stoped";
     }
 }

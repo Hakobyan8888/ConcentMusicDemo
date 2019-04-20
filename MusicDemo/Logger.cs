@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
-namespace ConcentMusic
+namespace MusicDemo
 {
+    //Done 
     class Logger
     {
         public static void Error(string logMessage)
@@ -15,7 +18,7 @@ namespace ConcentMusic
             WrileLog("WARN: " + logMessage);
         }
 
-        public static void Info(string logMessage)
+        public static void Information(string logMessage)
         {
             WrileLog("INFO: " + logMessage);
         }
@@ -34,7 +37,7 @@ namespace ConcentMusic
         {
             string _logLine = $"{DateTime.Now.ToLongTimeString()} {DateTime.Now.ToLongDateString()}:\t{typedLogMessage}";
 
-            using (StreamWriter logWriter = File.AppendText(AppSettings.LogsDirectory + "log.txt"))
+            using (StreamWriter logWriter = File.AppendText(ApplicationSettings.LogsDirectory + "log.txt"))
             {
                 logWriter.WriteLine(_logLine);
             }
@@ -49,7 +52,7 @@ namespace ConcentMusic
         {
             try
             {
-                Directory.CreateDirectory(AppSettings.LogsDirectory);
+                Directory.CreateDirectory(ApplicationSettings.LogsDirectory);
             }
             catch (Exception ex)
             {

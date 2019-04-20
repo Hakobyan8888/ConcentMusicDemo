@@ -4,12 +4,18 @@ using System.IO;
 using System.Diagnostics;
 using System.Linq;
 
-namespace ConcentMusic
+namespace MusicDemo
 {
     class MusicPlayer
     {
         private Process _vlcProcess;
         private bool? _isPlaying;
+        ProcessStartInfo psi;
+
+        public MusicPlayer()
+        {
+            psi = new ProcessStartInfo();
+        }
 
         ~MusicPlayer()
         {
@@ -27,13 +33,14 @@ namespace ConcentMusic
         public void PlayMusic(int id)
         {
             int _minTrackId;
-            ProcessStartInfo psi = new ProcessStartInfo();
-
+            psi = new ProcessStartInfo();
             psi.FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe";
-            psi.Arguments = "--play-and-exit " + AppSettings.MusicDirectory + id;
-            _minTrackId = TelegramBot._tracksList.Where(x => x._trackState == TrackState.Downloaded).Min(x => x._trackId);
-            TelegramBot._tracksList.Where(x => x._trackId == _minTrackId).First()._trackState = TrackState.Playing;
+            psi.Arguments = "--play-and-exit " + ApplicationSettings.MusicDirectory + id;
+            _minTrackId = BotSettings.tracksList.Where(x => x.trackState == TrackState.Downloaded).Min(x => x.trackId);
+            BotSettings.tracksList.Where(x => x.trackId == _minTrackId).First().trackState = TrackState.Playing;
+            _isPlaying = true;
             _vlcProcess = Process.Start(psi);
+
             _vlcProcess.WaitForExit();
 
             try
@@ -51,7 +58,7 @@ namespace ConcentMusic
         {
             try
             {
-                File.Delete(AppSettings.MusicDirectory + id);
+                File.Delete(ApplicationSettings.MusicDirectory + id);
             }
             catch (Exception ex)
             {
@@ -61,50 +68,36 @@ namespace ConcentMusic
 
         public void StartPlayingVlc()
         {
-            Thread cvlc = new Thread(StartPlaying);
-            cvlc.Start();
+            Thread vlc = new Thread(StartPlaying);
+            vlc.Start();
         }
 
         private void StartPlaying()
         {
-            int _minTrackId;
+            int minTrackId;
             while (true)
             {
-                if (TelegramBot._tracksList.Where(x => x._trackState == TrackState.Downloaded).Count() != 0)
+                if (BotSettings.tracksList.Where(x => x.trackState == TrackState.Downloaded).Count() != 0)
                 {
-                    TelegramBot._alterVotersCount = 0;
-                    TelegramBot._alterVote.Clear();
+                    BotSettings._alterVotersCount = 0;
+                    BotSettings._alterVote.Clear();
                     _isPlaying = true;
-                    _minTrackId = TelegramBot._tracksList.Where(x => x._trackState == TrackState.Downloaded).Min(x => x._trackId);
-                    PlayMusic(_minTrackId);
-                    TelegramBot._tracksList.RemoveAll(x => x._trackId == _minTrackId);
+                    minTrackId = BotSettings.tracksList.Where(x => x.trackState == TrackState.Downloaded).Min(x => x.trackId);
+                    PlayMusic(minTrackId);
+                    BotSettings.tracksList.RemoveAll(x => x.trackId == minTrackId);
                 }
                 else
                 {
                     _isPlaying = null;
-                    TelegramBot._alterVotersCount = null;
+                    BotSettings._alterVotersCount = null;
                     Thread.Sleep(100);
                 }
             }
         }
 
-        public void StopTrack()
-        {
-            Process _stopvlc;
-            ProcessStartInfo psi = new ProcessStartInfo();
-
-            psi.FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe";
-            psi.Arguments = "--global-key-stop " + _vlcProcess.Id;
-            _stopvlc = Process.Start(psi);
-            _stopvlc.WaitForExit();
-            _stopvlc.Close();
-            _isPlaying = false;
-        }
-
         public void PauseTrack()
         {
             Process _pausevlc;
-            ProcessStartInfo psi = new ProcessStartInfo();
 
             psi.FileName = @"C:\Users\Arthur\Downloads\PSTools\pssuspend.exe";
             psi.Arguments = _vlcProcess.Id.ToString();
@@ -116,14 +109,13 @@ namespace ConcentMusic
 
         public void ResumeTrack()
         {
-            Process _resumeCvlc;
-            ProcessStartInfo psi = new ProcessStartInfo();
+            Process _resumevlc;
 
             psi.FileName = @"C:\Users\Arthur\Downloads\PSTools\pssuspend.exe";
             psi.Arguments = "-r " + _vlcProcess.Id;
-            _resumeCvlc = Process.Start(psi);
-            _resumeCvlc.WaitForExit();
-            _resumeCvlc.Close();
+            _resumevlc = Process.Start(psi);
+            _resumevlc.WaitForExit();
+            _resumevlc.Close();
             _isPlaying = true;
         }
 
