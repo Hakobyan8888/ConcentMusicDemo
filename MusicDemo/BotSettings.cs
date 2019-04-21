@@ -4,10 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Telegram.Bot;
 using System.IO;
-using System.Linq;
-using System.Diagnostics;
-using System.Web;
-using System.Net;
+using Telegram.Bot.Args;
 
 namespace MusicDemo
 {
@@ -122,7 +119,7 @@ namespace MusicDemo
                     _telegramBotClient.SendTextMessageAsync(ev.Message.Chat.Id, ResponseMessages.Start);
                     break;
                 case "/skip":
-                    Alter(sender, ev);
+                    SkipVoting(sender, ev);
                     break;
                 case "/volumeup":
                     VolumeUp(sender, ev);
@@ -154,6 +151,8 @@ namespace MusicDemo
                 RemoveUser(sender, ev);
             }
         }
+
+        
 
         //Done
         private void AddToQueue(object sender, Telegram.Bot.Args.MessageEventArgs ev)

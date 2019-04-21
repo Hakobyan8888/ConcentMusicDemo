@@ -63,7 +63,7 @@ namespace MusicDemo
         }
 
         //Done ?
-        private void Alter(object sender, Telegram.Bot.Args.MessageEventArgs ev)
+        private void SkipVoting(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
             long _chatId = ev.Message.Chat.Id;
 
@@ -95,13 +95,13 @@ namespace MusicDemo
                 _telegramBotClient.SendTextMessageAsync(_chatId, $"{_halfMembers + 1 - _alterVotersCount} {ResponseMessages.VotesNotEnough}");
             }
         }
-
+        
         //Done
         public void VolumeUp(object sender, Telegram.Bot.Args.MessageEventArgs ev)
         {
             ProcessStartInfo psi = new ProcessStartInfo();
 
-            psi.FileName = @"C:\Users\Arthur\Downloads\nircmd-x64\nircmd.exe";
+            psi.FileName = ApplicationSettings.Plugins + "nircmd.exe";
             psi.Arguments = "changesysvolume 9375 ";
             Process amixerProcess = Process.Start(psi);
             amixerProcess.WaitForExit();
@@ -113,7 +113,7 @@ namespace MusicDemo
         {
             ProcessStartInfo psi = new ProcessStartInfo();
 
-            psi.FileName = @"C:\Users\Arthur\Downloads\nircmd-x64\nircmd.exe";
+            psi.FileName = ApplicationSettings.Plugins + "nircmd.exe";
             psi.Arguments = "changesysvolume -9375 ";
             Process amixerProcess = Process.Start(psi);
             amixerProcess.WaitForExit();

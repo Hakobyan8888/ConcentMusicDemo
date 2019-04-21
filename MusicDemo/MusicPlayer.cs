@@ -34,7 +34,7 @@ namespace MusicDemo
         {
             int _minTrackId;
             psi = new ProcessStartInfo();
-            psi.FileName = @"C:\Program Files\VideoLAN\VLC\vlc.exe";
+            psi.FileName = ApplicationSettings.Plugins + "VLC/vlc.exe";
             psi.Arguments = "--play-and-exit " + ApplicationSettings.MusicDirectory + id;
             _minTrackId = BotSettings.tracksList.Where(x => x.trackState == TrackState.Downloaded).Min(x => x.trackId);
             BotSettings.tracksList.Where(x => x.trackId == _minTrackId).First().trackState = TrackState.Playing;
@@ -99,7 +99,7 @@ namespace MusicDemo
         {
             Process _pausevlc;
 
-            psi.FileName = @"C:\Users\Arthur\Downloads\PSTools\pssuspend.exe";
+            psi.FileName = ApplicationSettings.Plugins + "pssuspend.exe";
             psi.Arguments = _vlcProcess.Id.ToString();
             _pausevlc = Process.Start(psi);
             _pausevlc.WaitForExit();
@@ -111,7 +111,7 @@ namespace MusicDemo
         {
             Process _resumevlc;
 
-            psi.FileName = @"C:\Users\Arthur\Downloads\PSTools\pssuspend.exe";
+            psi.FileName = ApplicationSettings.Plugins + "pssuspend.exe";
             psi.Arguments = "-r " + _vlcProcess.Id;
             _resumevlc = Process.Start(psi);
             _resumevlc.WaitForExit();
@@ -135,5 +135,6 @@ namespace MusicDemo
                 Logger.Warn($"{ex.Message}: Can't kill vlc process.");
             }
         }
+        
     }
 }

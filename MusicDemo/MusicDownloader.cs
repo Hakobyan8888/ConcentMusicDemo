@@ -52,7 +52,7 @@ namespace MusicDemo
             ProcessStartInfo psi = new ProcessStartInfo();
 
             BotSettings.tracksList.Where(x => x.trackId == trackId).First().trackState = TrackState.Downloading;
-            psi.FileName = @"C:\Program Files (x86)\youtube-dl.exe";
+            psi.FileName = ApplicationSettings.Plugins + "youtube-dl.exe";
             psi.Arguments = "-o " + "\"" + ApplicationSettings.MusicDirectory + trackId + "\"" + " -f 140 " + "\"" + _url + "\"";
             Process youtubeDlProcess = Process.Start(psi);
             youtubeDlProcess.WaitForExit();
